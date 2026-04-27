@@ -1,0 +1,412 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Reset & Base ─────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body, #root {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* ─── App layout ────────────────────────────────────────────────────────────── */
+.app-root {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #050a14;
+  transition: background 0.4s ease;
+}
+.app-root:not(.dark) { background: #0d1b2a; }
+
+.globe-container {
+  position: absolute;
+  inset: 0;
+}
+
+/* ─── Loading ────────────────────────────────────────────────────────────────  */
+.loading-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 16px;
+  color: #90caf9;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(79, 195, 247, 0.2);
+  border-top-color: #4fc3f7;
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+
+.loading-text {
+  font-size: 14px;
+  opacity: 0.7;
+  letter-spacing: 0.03em;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── Glassmorphism helpers ──────────────────────────────────────────────────  */
+.glass-dark {
+  background: rgba(5, 10, 20, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-light {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* ─── Top bar ────────────────────────────────────────────────────────────────  */
+.topbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  z-index: 100;
+  transition: all 0.3s ease;
+}
+
+.topbar.dark  { @apply glass-dark; color: #e3f2fd; }
+.topbar.light { @apply glass-light; color: #0d1b2a; }
+
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4fc3f7, #0288d1);
+  box-shadow: 0 0 8px rgba(79, 195, 247, 0.7);
+  animation: pulse-dot 2.5s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 8px rgba(79,195,247,0.7); }
+  50% { transform: scale(1.2); box-shadow: 0 0 14px rgba(79,195,247,1); }
+}
+
+.brand-title {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.brand-nz { color: #4fc3f7; }
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ─── Zoom badge ─────────────────────────────────────────────────────────────  */
+.zoom-badge {
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: all 0.3s ease;
+}
+
+.zoom-badge.dark  { background: rgba(79,195,247,0.15); color: #4fc3f7; border: 1px solid rgba(79,195,247,0.3); }
+.zoom-badge.light { background: rgba(2,136,209,0.1);   color: #0277bd; border: 1px solid rgba(2,136,209,0.25); }
+
+/* ─── Icon buttons ───────────────────────────────────────────────────────────  */
+.icon-btn {
+  width: 36px; height: 36px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.15s ease, background 0.2s ease;
+}
+.icon-btn:hover  { transform: scale(1.1); }
+.icon-btn:active { transform: scale(0.95); }
+.icon-btn.dark  { background: rgba(255,255,255,0.08); }
+.icon-btn.light { background: rgba(0,0,0,0.06); }
+
+/* ─── Zoom controls ──────────────────────────────────────────────────────────  */
+.zoom-controls {
+  position: fixed;
+  bottom: 80px; right: 20px;
+  display: flex;
+  flex-direction: column;
+  border-radius: 10px;
+  overflow: hidden;
+  z-index: 100;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+.zoom-controls.dark  { @apply glass-dark; }
+.zoom-controls.light { @apply glass-light; }
+
+.zoom-btn {
+  width: 40px; height: 40px;
+  font-size: 20px;
+  font-weight: 300;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s;
+  display: flex; align-items: center; justify-content: center;
+  line-height: 1;
+}
+.zoom-controls.dark .zoom-btn  { color: #e3f2fd; }
+.zoom-controls.dark .zoom-btn:hover  { background: rgba(255,255,255,0.1); }
+.zoom-controls.light .zoom-btn { color: #0d1b2a; }
+.zoom-controls.light .zoom-btn:hover { background: rgba(0,0,0,0.06); }
+
+.zoom-divider {
+  height: 1px;
+  margin: 0 8px;
+}
+.zoom-controls.dark  .zoom-divider { background: rgba(255,255,255,0.1); }
+.zoom-controls.light .zoom-divider { background: rgba(0,0,0,0.1); }
+
+/* ─── Legend ─────────────────────────────────────────────────────────────────  */
+.legend-card {
+  position: fixed;
+  bottom: 20px; left: 20px;
+  width: 220px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  z-index: 100;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+.legend-card.dark  { @apply glass-dark; color: #b0bec5; }
+.legend-card.light { @apply glass-light; color: #37474f; }
+
+.legend-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  opacity: 0.8;
+}
+
+.legend-bar {
+  height: 8px;
+  border-radius: 4px;
+  margin-bottom: 5px;
+}
+
+.legend-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+/* ─── Property panel ─────────────────────────────────────────────────────────  */
+.property-panel {
+  position: fixed;
+  top: 72px; right: 20px;
+  width: 280px;
+  padding: 18px;
+  border-radius: 14px;
+  z-index: 100;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  animation: slide-in 0.25s ease;
+}
+.property-panel.dark  { @apply glass-dark; color: #e3f2fd; }
+.property-panel.light { @apply glass-light; color: #0d1b2a; }
+
+@keyframes slide-in {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.panel-type {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  opacity: 0.5;
+  margin-bottom: 2px;
+}
+
+.panel-name {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.panel-close {
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  border: none;
+  background: rgba(255,255,255,0.08);
+  cursor: pointer;
+  font-size: 12px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.property-panel.light .panel-close { background: rgba(0,0,0,0.06); color: #0d1b2a; }
+.panel-close:hover { background: rgba(255,255,255,0.15); }
+
+.panel-price {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #4fc3f7;
+  line-height: 1.1;
+}
+.property-panel.light .panel-price { color: #0277bd; }
+
+.panel-price-label {
+  font-size: 11px;
+  opacity: 0.5;
+  margin-bottom: 6px;
+}
+
+.panel-change {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+.panel-change-period {
+  font-weight: 400;
+  opacity: 0.7;
+  font-size: 11px;
+}
+
+.panel-divider {
+  height: 1px;
+  margin: 0 0 12px;
+  background: rgba(255,255,255,0.1);
+}
+.property-panel.light .panel-divider { background: rgba(0,0,0,0.1); }
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+  font-size: 13px;
+}
+
+.stat-label { opacity: 0.6; }
+.stat-value { font-weight: 600; }
+
+.panel-footer {
+  margin-top: 14px;
+  font-size: 10px;
+  opacity: 0.35;
+  text-align: center;
+  letter-spacing: 0.03em;
+}
+
+/* ─── Badge pills ────────────────────────────────────────────────────────────  */
+.updated-badge {
+  position: fixed;
+  bottom: 20px; right: 74px;
+  font-size: 10px;
+  padding: 5px 10px;
+  border-radius: 20px;
+  z-index: 100;
+  letter-spacing: 0.03em;
+  opacity: 0.65;
+}
+.updated-badge.dark  { @apply glass-dark; color: #90caf9; }
+.updated-badge.light { @apply glass-light; color: #37474f; }
+
+.hint-badge {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  z-index: 100;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  opacity: 0.45;
+  pointer-events: none;
+}
+.hint-badge.dark  { @apply glass-dark; color: #90caf9; }
+.hint-badge.light { @apply glass-light; color: #37474f; }
+
+/* ─── Bar chart labels (rendered in Three.js CSS2D) ─────────────────────────  */
+.bar-label {
+  padding: 5px 9px;
+  border-radius: 8px;
+  text-align: center;
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+  transform: translateY(-4px);
+  opacity: 0;
+  animation: label-fade-in 0.4s ease forwards;
+}
+
+.bar-label.dark {
+  background: rgba(5, 10, 20, 0.85);
+  border: 1px solid rgba(79, 195, 247, 0.3);
+  color: #e3f2fd;
+}
+
+.bar-label.light {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(2, 136, 209, 0.25);
+  color: #0d1b2a;
+}
+
+.bar-label-name {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  opacity: 0.7;
+  text-transform: uppercase;
+  margin-bottom: 1px;
+}
+
+.bar-label-price {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #4fc3f7;
+}
+.bar-label.light .bar-label-price { color: #0277bd; }
+
+.bar-label-sub {
+  font-size: 9px;
+  opacity: 0.5;
+  margin-top: 1px;
+}
+
+@keyframes label-fade-in {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Scrollbar hide ─────────────────────────────────────────────────────────  */
+::-webkit-scrollbar { display: none; }
