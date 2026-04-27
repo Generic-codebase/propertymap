@@ -4,16 +4,18 @@ import { latLonToVec3, priceToThreeColor, formatPrice } from './utils.js';
 
 const MAX_BAR_HEIGHT = 0.28;
 const BAR_WIDTH = 0.018;
+const GROW_SPEED = 0.07;
 const UP = new THREE.Vector3(0, 1, 0);
 
 export class BarChartLayer {
-  constructor(scene) {
-    this.scene = scene;
+  constructor(parent) {
+    // Parent is earthGroup so bars + labels rotate with the globe
+    this.parent = parent;
     this.group = new THREE.Group();
     this.group.name = 'bars';
-    scene.add(this.group);
-    this.labels = [];
+    parent.add(this.group);
     this.bars = [];
+    this.labels = [];
   }
 
   update(suburbs, minPrice, maxPrice, darkMode) {
@@ -23,47 +25,67 @@ export class BarChartLayer {
     for (const s of suburbs) {
       const norm = (s.median_price - minPrice) / Math.max(maxPrice - minPrice, 1);
       const height = 0.04 + norm * MAX_BAR_HEIGHT;
-
       const normal = latLonToVec3(s.lat, s.lon, 1).normalize();
-      const basePos = normal.clone().multiplyScalar(1.004);
-      const tipPos = normal.clone().multiplyScalar(1.004 + height);
-      const centerPos = normal.clone().multiplyScalar(1.004 + height / 2);
-
-      // Bar geometry
-      const geo = new THREE.BoxGeometry(BAR_WIDTH, height, BAR_WIDTH);
       const color = priceToThreeColor(s.median_price, minPrice, maxPrice);
+      const baseEmissive = color.clone().multiplyScalar(0.25);
+
+      // Bar — starts flat (scale.y = 0) and grows upward each tick()
+      const geo = new THREE.BoxGeometry(BAR_WIDTH, height, BAR_WIDTH);
       const mat = new THREE.MeshPhongMaterial({
         color,
-        emissive: color.clone().multiplyScalar(0.25),
+        emissive: baseEmissive,
         shininess: 80,
         transparent: true,
         opacity: 0.92,
       });
       const bar = new THREE.Mesh(geo, mat);
-      bar.position.copy(centerPos);
+      bar.scale.y = 0.001;
+      bar.position.copy(normal.clone().multiplyScalar(1.004)); // start at base
       bar.quaternion.setFromUnitVectors(UP, normal);
-      bar.userData = { suburb: s };
+      bar.userData = { suburb: s, normal, height, baseNormalDist: 1.004, baseEmissive, growT: 0 };
       this.group.add(bar);
       this.bars.push(bar);
 
       // Base glow disc
-      const discGeo = new THREE.CircleGeometry(BAR_WIDTH * 1.4, 8);
-      const discMat = new THREE.MeshBasicMaterial({
-        color,
-        transparent: true,
-        opacity: 0.6,
-        depthWrite: false,
-      });
-      const disc = new THREE.Mesh(discGeo, discMat);
-      disc.position.copy(basePos);
+      const disc = new THREE.Mesh(
+        new THREE.CircleGeometry(BAR_WIDTH * 1.4, 8),
+        new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.5, depthWrite: false })
+      );
+      disc.position.copy(normal.clone().multiplyScalar(1.002));
       disc.quaternion.setFromUnitVectors(UP, normal);
       this.group.add(disc);
 
-      // CSS2D label at top of bar
+      // Label — child of group so it rotates with the globe
       const label = this._makeLabel(s, darkMode);
-      label.position.copy(tipPos.clone().multiplyScalar(1.02));
-      this.scene.add(label);
+      // Position is updated each tick as the bar grows
+      label.position.copy(normal.clone().multiplyScalar(1.004));
+      bar.userData.label = label;
+      this.group.add(label);
       this.labels.push(label);
+    }
+  }
+
+  // Called every animation frame to grow bars from the surface upward
+  tick() {
+    for (const bar of this.bars) {
+      if (bar.userData.growT >= 1) continue;
+      bar.userData.growT = Math.min(1, bar.userData.growT + GROW_SPEED);
+      const ease = 1 - Math.pow(1 - bar.userData.growT, 3);
+      bar.scale.y = Math.max(0.001, ease);
+      // Shift center position so base stays planted on the globe surface
+      bar.position.copy(
+        bar.userData.normal.clone().multiplyScalar(
+          bar.userData.baseNormalDist + (bar.userData.height * ease) / 2
+        )
+      );
+      // Move label to tip
+      if (bar.userData.label) {
+        bar.userData.label.position.copy(
+          bar.userData.normal.clone().multiplyScalar(
+            bar.userData.baseNormalDist + bar.userData.height * ease + 0.02
+          )
+        );
+      }
     }
   }
 
@@ -81,32 +103,29 @@ export class BarChartLayer {
 
   updateDarkMode(darkMode) {
     for (const label of this.labels) {
-      const div = label.element;
-      div.className = `bar-label ${darkMode ? 'dark' : 'light'}`;
+      label.element.className = `bar-label ${darkMode ? 'dark' : 'light'}`;
     }
   }
 
   setVisible(v) {
     this.group.visible = v;
-    for (const l of this.labels) l.visible = v;
-  }
-
-  clear() {
-    for (const l of this.labels) {
-      this.scene.remove(l);
-      if (l.element?.parentNode) l.element.parentNode.removeChild(l.element);
-    }
-    this.labels = [];
-    this.bars = [];
-    this.group.clear();
   }
 
   getBars() {
     return this.bars;
   }
 
+  clear() {
+    for (const label of this.labels) {
+      if (label.element?.parentNode) label.element.parentNode.removeChild(label.element);
+    }
+    this.bars = [];
+    this.labels = [];
+    this.group.clear();
+  }
+
   dispose() {
     this.clear();
-    this.scene.remove(this.group);
+    this.parent.remove(this.group);
   }
 }
